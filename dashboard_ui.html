@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sidecar Mesh Manager v2.1</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --success: #22c55e;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --text: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; width: 100%; display: grid; gap: 20px; }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--card);
+            padding-bottom: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .svc-card {
+            background: var(--card);
+            padding: 12px 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 4px solid #334155;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .svc-card:hover { transform: scale(1.02); background: #2d3a4f; }
+        .svc-card.ON { border-left-color: var(--success); }
+        .svc-card.OFF { border-left-color: var(--danger); }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.ON { background: var(--success); box-shadow: 0 0 8px var(--success); }
+        .dot.OFF { background: var(--danger); }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .scenario-card {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+        }
+
+        .actions { display: flex; gap: 8px; margin-top: 10px; }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: 0.2s;
+        }
+        button:hover { background: #1d4ed8; transform: translateY(-1px); }
+        button.danger { background: var(--danger); }
+        button.warning { background: var(--warning); color: #000; }
+        button.secondary { background: transparent; border: 1px solid #334155; }
+
+        .display-area {
+            background: #000;
+            color: #22c55e;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 11px;
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #334155;
+        }
+
+        .trace-item {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(56, 189, 248, 0.05);
+            border-left: 2px solid var(--accent);
+            white-space: pre-wrap;
+            color: #94a3b8;
+        }
+
+        .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .badge.c200 { background: #22c55e33; color: var(--success); }
+        .badge.c502, .badge.c503 { background: #ef444433; color: var(--danger); }
+
+        pre { margin: 0; color: #38bdf8; }
+        .json-key { color: #f472b6; }
+        .json-string { color: #22c55e; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1 style="margin:0; font-size: 1.5rem;">Sidecar Mesh Manager v2.1</h1>
+                <p style="color: #94a3b8; margin: 0; font-size: 0.9rem;">Demonstração de Resiliência, Observabilidade e SOLID</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="secondary" onclick="updateStatus()">REFRESH STATUS</button>
+            </div>
+        </header>
+
+        <section class="status-grid" id="statusGrid"></section>
+
+        <div class="dashboard-grid">
+            <!-- Cenários -->
+            <div class="panel">
+                <h2 style="font-size:1.1rem; margin:0;">Injeção de Falhas e Testes</h2>
+                
+                <div class="scenario-card">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>Gestão de PODs (Malha)</strong>
+                        <p style="font-size: 11px; color: #94a3b8; margin:0;">
+                            Simulação de K8s: Microserviço e Sidecar compartilham o mesmo ciclo de vida (POD). 
+                            Ao clicar em um, o outro o acompanhará.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="scenario-card" style="border-color: var(--accent); background: rgba(56, 189, 248, 0.05);">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong>Chamadas Individuais (Domínios)</strong>
+                    </div>
+                    <div class="actions">
+                        <button style="flex:1" class="secondary" onclick="runTest('http://127.0.0.1:9001/proxy/alunos/')">SIDECAR A (ALUNOS)</button>
+                        <button style="flex:1" class="secondary" onclick="runTest('http://127.0.0.1:9002/proxy/estrutura/')">SIDECAR B (ESTRUTURA)</button>
+                    </div>
+                    <div style="margin-top:10px;">
+                        <strong>Ponto de Ingress: Sidecar C (Agregador)</strong>
+                        <button style="width:100%; margin-top:5px;" onclick="runTest('http://127.0.0.1:9003/proxy/alunos-escolas/')">EXECUTAR CHAMADA AGREGADA</button>
+                    </div>
+                </div>
+
+                <div id="testResult" style="display:none">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <strong style="font-size:12px;">RESPOSTA DA MALHA</strong>
+                        <span id="resStatus" class="badge"></span>
+                    </div>
+                    <div class="display-area" id="resultBox" style="height:350px;"></div>
+                </div>
+            </div>
+
+            <!-- Observabilidade -->
+            <div class="panel">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="font-size:1.1rem; margin:0;">OpenTelemetry: Distributed Tracing</h2>
+                    <select id="telemetrySelect" onchange="loadTelemetry()" style="background:#1e293b; color:white; border:1px solid #334155; padding:4px; border-radius:4px; font-size:11px;">
+                        <option value="c">Sidecar C (Agregador)</option>
+                        <option value="a">Sidecar A (Alunos)</option>
+                        <option value="b">Sidecar B (Estrutura)</option>
+                    </select>
+                </div>
+                
+                <div class="display-area" id="telemetryDisplay">
+                    Aguardando primeira chamada para exibir traces...
+                </div>
+                
+                <h2 style="font-size:1.1rem; margin:0;">Eventos do Sistema</h2>
+                <div class="display-area" id="logDisplay" style="height:150px; color:#94a3b8; font-size:10px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function updateStatus() {
+            try {
+                const r = await fetch('/status');
+                const d = await r.json();
+                const grid = document.getElementById('statusGrid');
+                grid.innerHTML = Object.entries(d.services).map(([name, status]) => `
+                    <div class="svc-card ${status}" 
+                         onclick="toggleService('${name}', '${status === 'ON' ? 'stop' : 'start'}')"
+                         title="Clique para ${status === 'ON' ? 'Desligar' : 'Ligar'}">
+                        <span style="font-weight:600; font-size:12px;">${name.replace('_',' ').toUpperCase()}</span>
+                        <div class="dot ${status}"></div>
+                    </div>
+                `).join('');
+                document.getElementById('logDisplay').innerHTML = d.logs.slice().reverse().join('<br>');
+            } catch(e) {}
+        }
+
+        async function toggleService(name, action) {
+            await fetch('/manage', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, action})
+            });
+            setTimeout(updateStatus, 1000);
+        }
+
+        async function runTest(url) {
+            const resBox = document.getElementById('testResult');
+            const box = document.getElementById('resultBox');
+            const statusBadge = document.getElementById('resStatus');
+            
+            resBox.style.display = 'block';
+            box.innerText = '// Enviando requisição para a malha...';
+            
+            try {
+                const r = await fetch(`/test?url=${encodeURIComponent(url)}`);
+                const d = await r.json();
+
+                statusBadge.textContent = `${d.status} (${d.duration}s)`;
+                statusBadge.className = `badge c${d.status}`;
+                
+                if (d.data) {
+                    // Formata o JSON com indentação de 2 espaços
+                    box.innerText = JSON.stringify(d.data, null, 2);
+                    box.style.whiteSpace = 'pre'; // Garante que a indentação seja respeitada
+                } else {
+                    box.innerHTML = `<span style="color:var(--danger)">${d.error || 'SERVIÇO INDISPONÍVEL (Circuit Breaker Protegeu a chamada)'}</span>`;
+                }
+                
+                setTimeout(loadTelemetry, 500);
+            } catch(e) {
+                box.innerText = 'Falha no Dashboard Server.';
+            }
+        }
+
+        async function loadTelemetry() {
+            const sidecar = document.getElementById('telemetrySelect').value;
+            const display = document.getElementById('telemetryDisplay');
+            try {
+                const r = await fetch(`/telemetry?sidecar=${sidecar}`);
+                const d = await r.json();
+                if (d.traces.length === 0) {
+                    display.innerText = '// Nenhum span de telemetria capturado recentemente.';
+                    return;
+                }
+                display.innerHTML = d.traces.map(t => `<div class="trace-item">${t}</div>`).reverse().join('');
+            } catch(e) {}
+        }
+
+        setInterval(updateStatus, 3000);
+        updateStatus();
+    </script>
+</body>
+</html>
