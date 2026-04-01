@@ -12,6 +12,7 @@ class AgregadorService:
             headers["X-Request-ID"] = request_id
 
         estado_malha = "OK"
+        print(f"[{request_id}] AGREGADOR ATIVADO - PROCESSANDO MALHA...")
         alunos = []
         estrutura = []
         
