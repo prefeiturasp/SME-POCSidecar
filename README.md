@@ -14,28 +14,7 @@ O objetivo desta POC é validar a implementação de uma malha de serviços leve
 
 A malha é composta por três microsserviços principais, cada um acompanhado por um Proxy dedicado (Sidecar) que gerencia a comunicação de rede de saída e entrada.
 
-```mermaid
-graph TD
-    User([Cliente Externo]) -- ":9003" --> SidecarC[Sidecar C]
-    
-    subgraph "Agregador"
-        SidecarC <--> MSC[MS Agregador]
-    end
-
-    MSC -- ":9001" --> SidecarA[Sidecar A]
-    MSC -- ":9002" --> SidecarB[Sidecar B]
-
-    subgraph "Domínio Alunos"
-        SidecarA <--> MSA[MS Alunos]
-    end
-
-    subgraph "Domínio Escolas"
-        SidecarB <--> MSB[MS Estrutura]
-    end
-
-    classDef sidecar fill:#f4f4f4,stroke:#333,stroke-width:2px;
-    class SidecarA,SidecarB,SidecarC sidecar;
-```
+<img width="7004" height="3524" alt="image" src="https://github.com/user-attachments/assets/95bc2aeb-62c1-4369-ac4a-8285fa90a421" />
 
 ---
 
